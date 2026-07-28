@@ -107,6 +107,7 @@ export default function App() {
   }, [cardWidthInput, cardHeightInput, unitMode, isDimensionsLocked]);
 
   // Parámetros de imposición y diseño
+  const [showArrow, setShowArrow] = useState(true);
   const [arrowDirection, setArrowDirection] = useState('down');
   const [arrowColor, setArrowColor] = useState('#0090ff');
   const [paperSize, setPaperSize] = useState('letter');
@@ -229,7 +230,7 @@ export default function App() {
     setTimeout(() => {
       try {
         const filename = `Lote_${prefix}${startNum}_a_${prefix}${endNum}.pdf`;
-        generatePdf(layoutData, arrowDirection, filename, arrowColor);
+        generatePdf(layoutData, arrowDirection, filename, arrowColor, showArrow);
       } catch (err) {
         console.error('Error al generar PDF:', err);
         alert('Ocurrió un error al generar el archivo PDF.');
@@ -543,7 +544,7 @@ export default function App() {
                   <div className="step-header-right">
                     {!openSteps[3] && (
                       <span className="step-badge-summary">
-                        {arrowLabelMap[arrowDirection]}
+                        {showArrow ? arrowLabelMap[arrowDirection] : 'Sin flechas'}
                       </span>
                     )}
                     <ChevronDownIcon className="step-chevron" width={18} height={18} />
@@ -552,77 +553,89 @@ export default function App() {
 
                 {openSteps[3] && (
                   <div className="step-body">
-                    {/* Dirección */}
-                    <Grid columns="4" gap="2">
-                      <Button
-                        size="2"
-                        variant={arrowDirection === 'up' ? 'solid' : 'soft'}
-                        color={arrowDirection === 'up' ? 'blue' : 'gray'}
-                        onClick={() => setArrowDirection('up')}
-                        style={{ cursor: 'pointer', flexDirection: 'column', height: '56px', gap: '4px' }}
-                      >
-                        <ArrowUpIcon width={18} height={18} />
-                        <Text size="1">Arriba</Text>
-                      </Button>
-                      <Button
-                        size="2"
-                        variant={arrowDirection === 'down' ? 'solid' : 'soft'}
-                        color={arrowDirection === 'down' ? 'blue' : 'gray'}
-                        onClick={() => setArrowDirection('down')}
-                        style={{ cursor: 'pointer', flexDirection: 'column', height: '56px', gap: '4px' }}
-                      >
-                        <ArrowDownIcon width={18} height={18} />
-                        <Text size="1">Abajo</Text>
-                      </Button>
-                      <Button
-                        size="2"
-                        variant={arrowDirection === 'left' ? 'solid' : 'soft'}
-                        color={arrowDirection === 'left' ? 'blue' : 'gray'}
-                        onClick={() => setArrowDirection('left')}
-                        style={{ cursor: 'pointer', flexDirection: 'column', height: '56px', gap: '4px' }}
-                      >
-                        <ArrowLeftIcon width={18} height={18} />
-                        <Text size="1">Izquierda</Text>
-                      </Button>
-                      <Button
-                        size="2"
-                        variant={arrowDirection === 'right' ? 'solid' : 'soft'}
-                        color={arrowDirection === 'right' ? 'blue' : 'gray'}
-                        onClick={() => setArrowDirection('right')}
-                        style={{ cursor: 'pointer', flexDirection: 'column', height: '56px', gap: '4px' }}
-                      >
-                        <ArrowRightIcon width={18} height={18} />
-                        <Text size="1">Derecha</Text>
-                      </Button>
-                    </Grid>
-
-                    {/* Color de Flecha */}
-                    <div className="color-picker-section">
-                      <Text size="1" weight="bold" color="gray" style={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                        Color de Flecha
+                    {/* Activar / Desactivar flechas */}
+                    <Flex align="center" gap="3" mb={showArrow ? "3" : "0"}>
+                      <Switch checked={showArrow} onCheckedChange={setShowArrow} />
+                      <Text size="2" weight="bold" style={{ color: '#002f44' }}>
+                        Incluir flechas de orientación
                       </Text>
-                      <div className="color-swatches">
-                        {[
-                          { color: '#0090ff', label: 'Azul' },
-                          { color: '#e30915', label: 'Rojo' },
-                          { color: '#16a34a', label: 'Verde' },
-                          { color: '#f59e0b', label: 'Amarillo' },
-                          { color: '#7c3aed', label: 'Morado' },
-                          { color: '#ea580c', label: 'Naranja' },
-                          { color: '#db2777', label: 'Rosa' },
-                          { color: '#0f172a', label: 'Negro' },
-                        ].map(({ color, label }) => (
-                          <button
-                            key={color}
-                            className={`color-swatch ${arrowColor === color ? 'selected' : ''}`}
-                            style={{ '--swatch-color': color }}
-                            title={label}
-                            onClick={() => setArrowColor(color)}
-                            aria-label={`Color de flecha: ${label}`}
-                          />
-                        ))}
-                      </div>
-                    </div>
+                    </Flex>
+
+                    {showArrow && (
+                      <>
+                        {/* Dirección */}
+                        <Grid columns="4" gap="2">
+                          <Button
+                            size="2"
+                            variant={arrowDirection === 'up' ? 'solid' : 'soft'}
+                            color={arrowDirection === 'up' ? 'blue' : 'gray'}
+                            onClick={() => setArrowDirection('up')}
+                            style={{ cursor: 'pointer', flexDirection: 'column', height: '56px', gap: '4px' }}
+                          >
+                            <ArrowUpIcon width={18} height={18} />
+                            <Text size="1">Arriba</Text>
+                          </Button>
+                          <Button
+                            size="2"
+                            variant={arrowDirection === 'down' ? 'solid' : 'soft'}
+                            color={arrowDirection === 'down' ? 'blue' : 'gray'}
+                            onClick={() => setArrowDirection('down')}
+                            style={{ cursor: 'pointer', flexDirection: 'column', height: '56px', gap: '4px' }}
+                          >
+                            <ArrowDownIcon width={18} height={18} />
+                            <Text size="1">Abajo</Text>
+                          </Button>
+                          <Button
+                            size="2"
+                            variant={arrowDirection === 'left' ? 'solid' : 'soft'}
+                            color={arrowDirection === 'left' ? 'blue' : 'gray'}
+                            onClick={() => setArrowDirection('left')}
+                            style={{ cursor: 'pointer', flexDirection: 'column', height: '56px', gap: '4px' }}
+                          >
+                            <ArrowLeftIcon width={18} height={18} />
+                            <Text size="1">Izquierda</Text>
+                          </Button>
+                          <Button
+                            size="2"
+                            variant={arrowDirection === 'right' ? 'solid' : 'soft'}
+                            color={arrowDirection === 'right' ? 'blue' : 'gray'}
+                            onClick={() => setArrowDirection('right')}
+                            style={{ cursor: 'pointer', flexDirection: 'column', height: '56px', gap: '4px' }}
+                          >
+                            <ArrowRightIcon width={18} height={18} />
+                            <Text size="1">Derecha</Text>
+                          </Button>
+                        </Grid>
+
+                        {/* Color de Flecha */}
+                        <div className="color-picker-section">
+                          <Text size="1" weight="bold" color="gray" style={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            Color de Flecha
+                          </Text>
+                          <div className="color-swatches">
+                            {[
+                              { color: '#0090ff', label: 'Azul' },
+                              { color: '#e30915', label: 'Rojo' },
+                              { color: '#16a34a', label: 'Verde' },
+                              { color: '#f59e0b', label: 'Amarillo' },
+                              { color: '#7c3aed', label: 'Morado' },
+                              { color: '#ea580c', label: 'Naranja' },
+                              { color: '#db2777', label: 'Rosa' },
+                              { color: '#0f172a', label: 'Negro' },
+                            ].map(({ color, label }) => (
+                              <button
+                                key={color}
+                                className={`color-swatch ${arrowColor === color ? 'selected' : ''}`}
+                                style={{ '--swatch-color': color }}
+                                title={label}
+                                onClick={() => setArrowColor(color)}
+                                aria-label={`Color de flecha: ${label}`}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
@@ -775,7 +788,7 @@ export default function App() {
                           />
                         )}
                         <g dangerouslySetInnerHTML={{
-                          __html: generateCardSvgContent(card.labelText, card.width, card.height, arrowDirection, layoutData.maxLabelText, arrowColor)
+                          __html: generateCardSvgContent(card.labelText, card.width, card.height, arrowDirection, layoutData.maxLabelText, arrowColor, showArrow)
                         }} />
                       </g>
                     ))}

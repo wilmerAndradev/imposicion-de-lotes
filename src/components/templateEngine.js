@@ -62,7 +62,7 @@ function getTextWidth(text, fontSize) {
  * @param {string} direction - Dirección de la flecha
  * @param {string} maxLabelText - Texto más largo de todo el lote (ej: E90) para mantener tamaño uniforme
  */
-export function generateCardSvgContent(labelText, widthMm, heightMm, direction = 'down', maxLabelText = labelText, arrowColor = '#0090ff') {
+export function generateCardSvgContent(labelText, widthMm, heightMm, direction = 'down', maxLabelText = labelText, arrowColor = '#0090ff', showArrow = true) {
   const arrowPath = ARROW_PATHS[direction] || ARROW_PATHS.down;
   
   // 1. Tamaño de fuente base (~82% de la altura)
@@ -73,9 +73,9 @@ export function generateCardSvgContent(labelText, widthMm, heightMm, direction =
   let currentTextWidth = getTextWidth(labelText, fontSize);
 
   // 3. Dimensiones de la flecha y separación de seguridad (gap)
-  let arrowHeight = heightMm * 0.80;
-  let arrowWidth = Math.min(widthMm * 0.38, arrowHeight * 0.75);
-  let gap = Math.max(2.5, heightMm * 0.06);
+  let arrowHeight = showArrow ? heightMm * 0.80 : 0;
+  let arrowWidth = showArrow ? Math.min(widthMm * 0.38, arrowHeight * 0.75) : 0;
+  let gap = showArrow ? Math.max(2.5, heightMm * 0.06) : 0;
 
   let totalWidthForMax = maxTextWidth + gap + arrowWidth;
   const maxAllowedWidth = widthMm * 0.94; // Utilizar hasta el 94% del ancho de la tarjeta
@@ -96,18 +96,22 @@ export function generateCardSvgContent(labelText, widthMm, heightMm, direction =
 
   let textX, arrowX, arrowY;
 
-  if (direction === 'left') {
+  if (showArrow && direction === 'left') {
     arrowX = startX;
     arrowY = (heightMm - arrowHeight) / 2;
     textX = startX + arrowWidth + gap;
-  } else {
+  } else if (showArrow) {
     textX = startX;
     arrowX = startX + currentTextWidth + gap;
     arrowY = (heightMm - arrowHeight) / 2;
+  } else {
+    textX = startX;
+    arrowX = 0;
+    arrowY = 0;
   }
 
-  const arrowScaleX = (arrowWidth / 100).toFixed(4);
-  const arrowScaleY = (arrowHeight / 100).toFixed(4);
+  const arrowScaleX = arrowWidth > 0 ? (arrowWidth / 100).toFixed(4) : '0';
+  const arrowScaleY = arrowHeight > 0 ? (arrowHeight / 100).toFixed(4) : '0';
 
   return `
     <g class="card-content">
@@ -125,10 +129,10 @@ export function generateCardSvgContent(labelText, widthMm, heightMm, direction =
                 text-anchor="start" 
                 dominant-baseline="central">${labelText}</text>
 
-          <!-- Flecha de color dinámico -->
+          ${showArrow ? `<!-- Flecha de color dinámico -->
           <g transform="translate(${arrowX.toFixed(2)}, ${arrowY.toFixed(2)}) scale(${arrowScaleX}, ${arrowScaleY})">
             <path d="${arrowPath}" fill="${arrowColor}" />
-          </g>
+          </g>` : ''}
         </g>
       </svg>
     </g>

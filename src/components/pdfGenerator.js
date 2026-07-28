@@ -9,11 +9,12 @@ import { jsPDF } from 'jspdf';
 /**
  * Genera y descarga el archivo PDF de la imposición completa.
  */
-export function generatePdf(layoutData, arrowDirection = 'down', filename = 'lote_impresion.pdf', arrowColor = '#0090ff') {
+export function generatePdf(layoutData, arrowDirection = 'down', filename = 'lote_impresion.pdf', arrowColor = '#0090ff', showArrow = true) {
   const {
     sheetWidth,
     sheetHeight,
     pages,
+    showCardOutline,
     getCropMarksForPage
   } = layoutData;
 
@@ -34,24 +35,26 @@ export function generatePdf(layoutData, arrowDirection = 'down', filename = 'lot
 
     // 1. Dibujar Tarjetas de la Página con tipografía uniforme
     page.cards.forEach(card => {
-      drawCardOnPdf(doc, card, arrowDirection, layoutData.maxLabelText, arrowColor);
+      drawCardOnPdf(doc, card, arrowDirection, layoutData.maxLabelText, arrowColor, showArrow);
       
       // Dibujar borde recuadro de corte si está activado
       if (layoutData.showCardOutline) {
-        doc.setDrawColor(160, 160, 160); // Gris fino
-        doc.setLineWidth(0.12);          // Hairline 0.12 mm
+        doc.setDrawColor(100, 116, 139); // Gris fino
+        doc.setLineWidth(0.25);          // Hairline 0.25 mm
         doc.rect(card.x, card.y, card.width, card.height, 'S');
       }
     });
 
     // 2. Dibujar Marcas de Corte en Vectorial
-    const cropLines = getCropMarksForPage(page.cards);
-    doc.setDrawColor(0, 0, 0); // Negro puro
-    doc.setLineWidth(0.12);    // Línea fina hairline de 0.12 mm
+    if (layoutData.showCropMarks) {
+      const cropLines = getCropMarksForPage(page.cards);
+      doc.setDrawColor(0, 0, 0); // Negro puro
+      doc.setLineWidth(0.25);    // Línea fina hairline de 0.25 mm
 
-    cropLines.forEach(line => {
-      doc.line(line.x1, line.y1, line.x2, line.y2);
-    });
+      cropLines.forEach(line => {
+        doc.line(line.x1, line.y1, line.x2, line.y2);
+      });
+    }
   });
 
   // Guardar y descargar PDF
@@ -62,7 +65,7 @@ export function generatePdf(layoutData, arrowDirection = 'down', filename = 'lot
  * Dibuja el contenido vectorial de una tarjeta individual dentro del documento PDF,
  * ocupando el máximo espacio vertical y horizontal de la tarjeta (80%+).
  */
-function drawCardOnPdf(doc, card, direction, maxLabelText = card.labelText, arrowColor = '#0090ff') {
+function drawCardOnPdf(doc, card, direction, maxLabelText = card.labelText, arrowColor = '#0090ff', showArrow = true) {
   const { x, y, width, height, labelText } = card;
 
   // Fondo blanco de tarjeta
@@ -82,9 +85,9 @@ function drawCardOnPdf(doc, card, direction, maxLabelText = card.labelText, arro
   let currentTextWidthMm = doc.getTextWidth(labelText);
 
   // Dimensiones de la flecha en mm
-  let arrowBoxH = height * 0.80;
-  let arrowBoxW = Math.min(width * 0.38, arrowBoxH * 0.75);
-  let gap = Math.max(2.5, height * 0.06);
+  let arrowBoxH = showArrow ? height * 0.80 : 0;
+  let arrowBoxW = showArrow ? Math.min(width * 0.38, arrowBoxH * 0.75) : 0;
+  let gap = showArrow ? Math.max(2.5, height * 0.06) : 0;
 
   let totalWidthForMax = maxTextWidthMm + gap + arrowBoxW;
   const maxAllowedWidth = width * 0.94; // Utilizar hasta el 94% del ancho
@@ -106,20 +109,24 @@ function drawCardOnPdf(doc, card, direction, maxLabelText = card.labelText, arro
   const fontSizeMm = fontSizePt / 2.83465;
   const textY = y + (height / 2) + (fontSizeMm * 0.32);
 
-  if (direction === 'left') {
-    const arrowX = startX;
-    const arrowY = y + (height - arrowBoxH) / 2;
-    drawColorArrow(doc, arrowX, arrowY, arrowBoxW, arrowBoxH, 'left', arrowColor);
+  if (showArrow) {
+    if (direction === 'left') {
+      const arrowX = startX;
+      const arrowY = y + (height - arrowBoxH) / 2;
+      drawColorArrow(doc, arrowX, arrowY, arrowBoxW, arrowBoxH, 'left', arrowColor);
 
-    const textX = startX + arrowBoxW + gap;
-    doc.text(labelText, textX, textY);
+      const textX = startX + arrowBoxW + gap;
+      doc.text(labelText, textX, textY);
+    } else {
+      const textX = startX;
+      doc.text(labelText, textX, textY);
+
+      const arrowX = startX + currentTextWidthMm + gap;
+      const arrowY = y + (height - arrowBoxH) / 2;
+      drawColorArrow(doc, arrowX, arrowY, arrowBoxW, arrowBoxH, direction, arrowColor);
+    }
   } else {
-    const textX = startX;
-    doc.text(labelText, textX, textY);
-
-    const arrowX = startX + currentTextWidthMm + gap;
-    const arrowY = y + (height - arrowBoxH) / 2;
-    drawColorArrow(doc, arrowX, arrowY, arrowBoxW, arrowBoxH, direction, arrowColor);
+    doc.text(labelText, startX, textY);
   }
 }
 
