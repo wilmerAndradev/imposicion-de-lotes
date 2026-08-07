@@ -36,6 +36,8 @@ import { generatePdf } from './components/pdfGenerator.js';
 
 export default function App() {
   // Estado de configuración de la secuencia y lienzo
+  const [showNumbering, setShowNumbering] = useState(true);
+  const [totalCopies, setTotalCopies] = useState(10);
   const [prefix, setPrefix] = useState('E');
   const [startNum, setStartNum] = useState(1);
   const [endNum, setEndNum] = useState(90);
@@ -147,8 +149,11 @@ export default function App() {
     const unitFactor = unitMode === 'cm' ? 10 : 1;
     const start = Math.max(0, parseInt(startNum) || 1);
     const end = Math.max(start, parseInt(endNum) || 1);
+    const copies = Math.max(1, parseInt(totalCopies) || 1);
 
     return calculateLayout({
+      showNumbering,
+      totalCopies: copies,
       prefix,
       startNum: start,
       endNum: end,
@@ -163,7 +168,7 @@ export default function App() {
       showCardOutline
     });
   }, [
-    prefix, startNum, endNum, padZeros, unitMode,
+    showNumbering, totalCopies, prefix, startNum, endNum, padZeros, unitMode,
     cardWidthInput, cardHeightInput, gutterSizeInput, pageMarginInput,
     paperSize, paperOrientation, showCropMarks, showCardOutline
   ]);
@@ -229,7 +234,9 @@ export default function App() {
 
     setTimeout(() => {
       try {
-        const filename = `Lote_${prefix}${startNum}_a_${prefix}${endNum}.pdf`;
+        const filename = showNumbering
+          ? `Lote_${prefix}${startNum}_a_${prefix}${endNum}.pdf`
+          : `Lote_${prefix || 'etiquetas'}_${totalCopies}_copias.pdf`;
         generatePdf(layoutData, arrowDirection, filename, arrowColor, showArrow);
       } catch (err) {
         console.error('Error al generar PDF:', err);
@@ -378,13 +385,15 @@ export default function App() {
                     <span className="step-number">1</span>
                     <h2 className="step-title">
                       <FontFamilyIcon width={16} height={16} style={{ color: 'var(--accent-9)' }} />
-                      Secuencia de Etiquetas
+                      Texto y Numeración
                     </h2>
                   </div>
                   <div className="step-header-right">
                     {!openSteps[1] && (
                       <span className="step-badge-summary">
-                        {prefix}{startNum} a {prefix}{endNum}
+                        {showNumbering
+                          ? `${prefix}${startNum} a ${prefix}${endNum}`
+                          : `${totalCopies} copias ("${prefix}")`}
                       </span>
                     )}
                     <ChevronDownIcon className="step-chevron" width={18} height={18} />
@@ -393,60 +402,99 @@ export default function App() {
 
                 {openSteps[1] && (
                   <div className="step-body">
-                    <Grid columns="2" gap="3" mb="3">
-                      <Box style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                        <Text size="1" weight="bold" color="gray" mb="1" as="div" style={{ whiteSpace: 'nowrap', minHeight: '20px', display: 'flex', alignItems: 'center' }}>
-                          Prefijo
-                        </Text>
-                        <TextField.Root
-                          size="2"
-                          value={prefix}
-                          maxLength={10}
-                          onChange={(e) => setPrefix(e.target.value)}
-                          placeholder="Ej: E, A, LOT"
-                        />
-                      </Box>
-                      <Box style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                        <Text size="1" weight="bold" color="gray" mb="1" as="div" style={{ whiteSpace: 'nowrap', minHeight: '20px', display: 'flex', alignItems: 'center' }}>
-                          Formato ceros
-                        </Text>
-                        <Select.Root value={padZeros} onValueChange={setPadZeros}>
-                          <Select.Trigger size="2" style={{ width: '100%' }} />
-                          <Select.Content position="popper">
-                            <Select.Item value="none">Sin ceros (1, 2)</Select.Item>
-                            <Select.Item value="2">2 dígitos (01, 02)</Select.Item>
-                            <Select.Item value="3">3 dígitos (001, 002)</Select.Item>
-                          </Select.Content>
-                        </Select.Root>
-                      </Box>
-                    </Grid>
+                    {/* Conmutador de numeración */}
+                    <Flex align="center" gap="3" mb="3">
+                      <Switch checked={showNumbering} onCheckedChange={setShowNumbering} />
+                      <Text size="2" weight="bold" style={{ color: '#002f44' }}>
+                        Incluir numeración correlativa
+                      </Text>
+                    </Flex>
 
-                    <Grid columns="2" gap="3">
-                      <Box style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                        <Text size="1" weight="bold" color="gray" mb="1" as="div" style={{ whiteSpace: 'nowrap', minHeight: '20px', display: 'flex', alignItems: 'center' }}>
-                          Empieza en
-                        </Text>
-                        <TextField.Root
-                          size="2"
-                          type="number"
-                          value={startNum}
-                          min="0"
-                          onChange={(e) => setStartNum(e.target.value)}
-                        />
-                      </Box>
-                      <Box style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                        <Text size="1" weight="bold" color="gray" mb="1" as="div" style={{ whiteSpace: 'nowrap', minHeight: '20px', display: 'flex', alignItems: 'center' }}>
-                          Termina en
-                        </Text>
-                        <TextField.Root
-                          size="2"
-                          type="number"
-                          value={endNum}
-                          min="1"
-                          onChange={(e) => setEndNum(e.target.value)}
-                        />
-                      </Box>
-                    </Grid>
+                    {showNumbering ? (
+                      <>
+                        <Grid columns="2" gap="3" mb="3">
+                          <Box style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                            <Text size="1" weight="bold" color="gray" mb="1" as="div" style={{ whiteSpace: 'nowrap', minHeight: '20px', display: 'flex', alignItems: 'center' }}>
+                              Prefijo
+                            </Text>
+                            <TextField.Root
+                              size="2"
+                              value={prefix}
+                              maxLength={15}
+                              onChange={(e) => setPrefix(e.target.value)}
+                              placeholder="Ej: E, A, LOT, slky"
+                            />
+                          </Box>
+                          <Box style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                            <Text size="1" weight="bold" color="gray" mb="1" as="div" style={{ whiteSpace: 'nowrap', minHeight: '20px', display: 'flex', alignItems: 'center' }}>
+                              Formato ceros
+                            </Text>
+                            <Select.Root value={padZeros} onValueChange={setPadZeros}>
+                              <Select.Trigger size="2" style={{ width: '100%' }} />
+                              <Select.Content position="popper">
+                                <Select.Item value="none">Sin ceros (1, 2)</Select.Item>
+                                <Select.Item value="2">2 dígitos (01, 02)</Select.Item>
+                                <Select.Item value="3">3 dígitos (001, 002)</Select.Item>
+                              </Select.Content>
+                            </Select.Root>
+                          </Box>
+                        </Grid>
+
+                        <Grid columns="2" gap="3">
+                          <Box style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                            <Text size="1" weight="bold" color="gray" mb="1" as="div" style={{ whiteSpace: 'nowrap', minHeight: '20px', display: 'flex', alignItems: 'center' }}>
+                              Empieza en
+                            </Text>
+                            <TextField.Root
+                              size="2"
+                              type="number"
+                              value={startNum}
+                              min="0"
+                              onChange={(e) => setStartNum(e.target.value)}
+                            />
+                          </Box>
+                          <Box style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                            <Text size="1" weight="bold" color="gray" mb="1" as="div" style={{ whiteSpace: 'nowrap', minHeight: '20px', display: 'flex', alignItems: 'center' }}>
+                              Termina en
+                            </Text>
+                            <TextField.Root
+                              size="2"
+                              type="number"
+                              value={endNum}
+                              min="1"
+                              onChange={(e) => setEndNum(e.target.value)}
+                            />
+                          </Box>
+                        </Grid>
+                      </>
+                    ) : (
+                      <Grid columns="2" gap="3">
+                        <Box style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                          <Text size="1" weight="bold" color="gray" mb="1" as="div" style={{ whiteSpace: 'nowrap', minHeight: '20px', display: 'flex', alignItems: 'center' }}>
+                            Texto de la tarjeta
+                          </Text>
+                          <TextField.Root
+                            size="2"
+                            value={prefix}
+                            maxLength={15}
+                            onChange={(e) => setPrefix(e.target.value)}
+                            placeholder="Ej: slky, LOT, E"
+                          />
+                        </Box>
+                        <Box style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                          <Text size="1" weight="bold" color="gray" mb="1" as="div" style={{ whiteSpace: 'nowrap', minHeight: '20px', display: 'flex', alignItems: 'center' }}>
+                            Cantidad de copias
+                          </Text>
+                          <TextField.Root
+                            size="2"
+                            type="number"
+                            value={totalCopies}
+                            min="1"
+                            onChange={(e) => setTotalCopies(e.target.value)}
+                          />
+                        </Box>
+                      </Grid>
+                    )}
                   </div>
                 )}
               </div>

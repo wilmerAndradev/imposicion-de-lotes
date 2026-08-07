@@ -18,6 +18,8 @@ export const PAPER_SIZES = {
  */
 export function calculateLayout(config) {
   const {
+    showNumbering = true,
+    totalCopies = 10,
     prefix = 'E',
     startNum = 1,
     endNum = 90,
@@ -61,22 +63,34 @@ export function calculateLayout(config) {
   const usedArea = cardsPerPage * (cardWidth * cardHeight);
   const efficiency = Math.round((usedArea / usableArea) * 100);
 
-  // 6. Generar lista de tarjetas con sus etiquetas numéricas
-  const totalCards = Math.max(0, endNum - startNum + 1);
+  // 6. Generar lista de tarjetas con sus etiquetas (con o sin numeración)
+  let totalCards;
   const items = [];
-  
-  for (let i = 0; i < totalCards; i++) {
-    const num = startNum + i;
-    let numStr = String(num);
-    if (padZeros === '2') numStr = numStr.padStart(2, '0');
-    if (padZeros === '3') numStr = numStr.padStart(3, '0');
 
-    const labelText = `${prefix}${numStr}`;
-    items.push({
-      index: i,
-      number: num,
-      labelText
-    });
+  if (showNumbering) {
+    totalCards = Math.max(0, endNum - startNum + 1);
+    for (let i = 0; i < totalCards; i++) {
+      const num = startNum + i;
+      let numStr = String(num);
+      if (padZeros === '2') numStr = numStr.padStart(2, '0');
+      if (padZeros === '3') numStr = numStr.padStart(3, '0');
+
+      const labelText = `${prefix}${numStr}`;
+      items.push({
+        index: i,
+        number: num,
+        labelText
+      });
+    }
+  } else {
+    totalCards = Math.max(1, parseInt(totalCopies) || 1);
+    for (let i = 0; i < totalCards; i++) {
+      items.push({
+        index: i,
+        number: null,
+        labelText: prefix
+      });
+    }
   }
 
   // 7. Agrupar tarjetas en páginas
@@ -159,7 +173,7 @@ export function calculateLayout(config) {
   };
 
   // 9. Determinar el texto de la etiqueta más larga del lote para uniformidad de tipografía
-  const maxLabelText = items.reduce((max, item) => item.labelText.length > max.length ? item.labelText : max, items[0]?.labelText || `${prefix}${endNum}`);
+  const maxLabelText = items.reduce((max, item) => item.labelText.length > max.length ? item.labelText : max, items[0]?.labelText || prefix);
 
   return {
     sheetWidth,
