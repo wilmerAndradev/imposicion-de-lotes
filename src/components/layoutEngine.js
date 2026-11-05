@@ -27,9 +27,9 @@ export function calculateLayout(config) {
     cardWidth = 60,   // mm
     cardHeight = 40,  // mm
     paperSize = 'letter',
-    paperOrientation = 'portrait',
-    gutterSize = 5,   // mm (separación de corte)
-    pageMargin = 10,  // mm
+    paperOrientation = 'auto',
+    gutterSize = 0,   // mm (separación de corte)
+    pageMargin = 0,  // mm
     showCropMarks = true,
     showCardOutline = true,
     cropMarkLength = 4, // mm
@@ -38,30 +38,33 @@ export function calculateLayout(config) {
 
   // 1. Obtener dimensiones del papel según tamaño y orientación
   const basePaper = PAPER_SIZES[paperSize] || PAPER_SIZES.letter;
-  const sheetWidth = paperOrientation === 'landscape' ? basePaper.height : basePaper.width;
-  const sheetHeight = paperOrientation === 'landscape' ? basePaper.width : basePaper.height;
-
-  // 2. Área utilizable en la hoja
-  const usableWidth = sheetWidth - (pageMargin * 2);
-  const usableHeight = sheetHeight - (pageMargin * 2);
+  const validDimensions = [cardWidth, cardHeight].every(v => Number.isFinite(v) && v > 0)
+    && [gutterSize, pageMargin].every(v => Number.isFinite(v) && v >= 0);
+  const count = (length, size) => validDimensions
+    ? Math.max(0, Math.floor((length - 2 * pageMargin + gutterSize + 1e-9) / (size + gutterSize)))
+    : 0;
+  const portraitCount = count(basePaper.width, cardWidth) * count(basePaper.height, cardHeight);
+  const landscapeCount = count(basePaper.height, cardWidth) * count(basePaper.width, cardHeight);
+  const resolvedOrientation = paperOrientation === 'auto'
+    ? (landscapeCount > portraitCount ? 'landscape' : 'portrait') : paperOrientation;
+  const sheetWidth = resolvedOrientation === 'landscape' ? basePaper.height : basePaper.width;
+  const sheetHeight = resolvedOrientation === 'landscape' ? basePaper.width : basePaper.height;
 
   // 3. Calcular cuántas columnas y filas entran
   // Para N elementos con gutter G entre ellos: AnchoTotal = N*W + (N-1)*G <= usableWidth
   // => N*(W + G) - G <= usableWidth => N <= (usableWidth + G) / (W + G)
-  const cols = Math.max(1, Math.floor((usableWidth + gutterSize) / (cardWidth + gutterSize)));
-  const rows = Math.max(1, Math.floor((usableHeight + gutterSize) / (cardHeight + gutterSize)));
+  const cols = count(sheetWidth, cardWidth);
+  const rows = count(sheetHeight, cardHeight);
   const cardsPerPage = cols * rows;
 
-  // 4. Centrar la grilla resultante en la hoja
-  const totalGridWidth = (cols * cardWidth) + ((cols - 1) * gutterSize);
-  const totalGridHeight = (rows * cardHeight) + ((rows - 1) * gutterSize);
-  const startX = (sheetWidth - totalGridWidth) / 2;
-  const startY = (sheetHeight - totalGridHeight) / 2;
+  // 4. Alinear al margen solicitado; concentrar el sobrante al final de la hoja.
+  const startX = pageMargin;
+  const startY = pageMargin;
 
   // 5. Eficiencia de uso de papel
   const usableArea = sheetWidth * sheetHeight;
   const usedArea = cardsPerPage * (cardWidth * cardHeight);
-  const efficiency = Math.round((usedArea / usableArea) * 100);
+  const efficiency = validDimensions ? Math.round((usedArea / usableArea) * 100) : 0;
 
   // 6. Generar lista de tarjetas con sus etiquetas (con o sin numeración)
   let totalCards;
@@ -94,7 +97,7 @@ export function calculateLayout(config) {
   }
 
   // 7. Agrupar tarjetas en páginas
-  const totalPages = Math.ceil(totalCards / cardsPerPage) || 1;
+  const totalPages = cardsPerPage > 0 ? Math.ceil(totalCards / cardsPerPage) || 1 : 1;
   const pages = [];
 
   for (let p = 0; p < totalPages; p++) {
@@ -139,6 +142,15 @@ export function calculateLayout(config) {
     const addedLines = new Set();
 
     const addLine = (x1, y1, x2, y2) => {
+      // Recortar al papel y evitar marcas dentro de otras piezas cuando comparten corte.
+      x1 = Math.max(0, Math.min(sheetWidth, x1));
+      x2 = Math.max(0, Math.min(sheetWidth, x2));
+      y1 = Math.max(0, Math.min(sheetHeight, y1));
+      y2 = Math.max(0, Math.min(sheetHeight, y2));
+      if (x1 === x2 && y1 === y2) return;
+      if (pageCards.some(c => x1 === x2
+        ? x1 >= c.x && x1 <= c.x + c.width && y2 > c.y && y1 < c.y + c.height
+        : y1 >= c.y && y1 <= c.y + c.height && x2 > c.x && x1 < c.x + c.width)) return;
       const key = `${x1.toFixed(2)},${y1.toFixed(2)}-${x2.toFixed(2)},${y2.toFixed(2)}`;
       if (!addedLines.has(key)) {
         addedLines.add(key);
@@ -178,6 +190,9 @@ export function calculateLayout(config) {
   return {
     sheetWidth,
     sheetHeight,
+    resolvedOrientation,
+    error: !validDimensions ? 'Ingresa medidas positivas y márgenes no negativos.'
+      : cardsPerPage === 0 ? 'La pieza no cabe en la hoja con estas medidas y márgenes.' : null,
     cardWidth,
     cardHeight,
     cols,
@@ -189,6 +204,7 @@ export function calculateLayout(config) {
     pages,
     maxLabelText,
     showCardOutline,
+    showCropMarks,
     getCropMarksForPage
   };
 }

@@ -23,6 +23,14 @@
 
 ## 🛠️ Tecnologías Utilizadas
 
+### Aprovechamiento de papel
+
+La orientación automática compara una cuadrícula vertical y horizontal y elige la que permite más piezas, sin cambiar sus medidas. El margen y la separación empiezan en 0; las piezas se alinean en la esquina superior izquierda y comparten líneas de corte. Puedes configurar margen y separación para tu impresora o proceso de corte.
+
+Por ejemplo, las piezas de 10 × 5 cm permiten 10 unidades en Carta o A4 vertical, frente a 6 en Carta horizontal con margen de 1 cm y separación de 5 mm. El sobrante que no alcanza para otra pieza queda al final de la cuadrícula. La distribución mantiene todas las piezas en la misma orientación, sin mezclar giros.
+
+Ejecuta `npm test` para verificar capacidad, medidas, paginación y marcas de corte.
+
 * **[React 18](https://react.dev/)**: Biblioteca principal de interfaz de usuario.
 * **[Vite](https://vitejs.dev/)**: Entorno de desarrollo rápido y empaquetador de módulos.
 * **[@radix-ui/themes](https://www.radix-ui.com/)**: Sistema de diseño moderno y componentes accesibles.

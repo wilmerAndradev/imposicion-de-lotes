@@ -69,8 +69,8 @@ export default function App() {
   // Medidas ingresadas por el usuario
   const [cardWidthInput, setCardWidthInput] = useState(() => getSavedDimension('width', 6));
   const [cardHeightInput, setCardHeightInput] = useState(() => getSavedDimension('height', 4));
-  const [gutterSizeInput, setGutterSizeInput] = useState(0.5);
-  const [pageMarginInput, setPageMarginInput] = useState(1);
+  const [gutterSizeInput, setGutterSizeInput] = useState(0);
+  const [pageMarginInput, setPageMarginInput] = useState(0);
 
   // Alternar bloqueo de medidas en localStorage
   const toggleLockDimensions = () => {
@@ -113,7 +113,7 @@ export default function App() {
   const [arrowDirection, setArrowDirection] = useState('down');
   const [arrowColor, setArrowColor] = useState('#0090ff');
   const [paperSize, setPaperSize] = useState('letter');
-  const [paperOrientation, setPaperOrientation] = useState('portrait');
+  const [paperOrientation, setPaperOrientation] = useState('auto');
   const [showCropMarks, setShowCropMarks] = useState(true);
   const [showCardOutline, setShowCardOutline] = useState(true);
 
@@ -229,7 +229,7 @@ export default function App() {
 
   // Manejar exportación a PDF usando el motor original (pdfGenerator)
   const handleExportPdf = () => {
-    if (!layoutData) return;
+    if (!layoutData || layoutData.error) return;
     setIsExporting(true);
 
     setTimeout(() => {
@@ -362,7 +362,7 @@ export default function App() {
             <Button
               size="3"
               variant="solid"
-              disabled={isExporting}
+              disabled={isExporting || !!layoutData.error}
               onClick={handleExportPdf}
               style={{ cursor: 'pointer', fontWeight: 'bold' }}
             >
@@ -730,6 +730,7 @@ export default function App() {
                         <Select.Root value={paperOrientation} onValueChange={setPaperOrientation}>
                           <Select.Trigger size="2" style={{ width: '100%' }} />
                           <Select.Content position="popper">
+                            <Select.Item value="auto">Automática (más piezas)</Select.Item>
                             <Select.Item value="portrait">Vertical</Select.Item>
                             <Select.Item value="landscape">Horizontal</Select.Item>
                           </Select.Content>
@@ -766,6 +767,11 @@ export default function App() {
                       </Box>
                     </Grid>
 
+                    <Text size="1" color="gray" as="p">
+                      Las piezas conservan sus medidas y se alinean al margen superior izquierdo.
+                      Con margen y espaciado en 0 comparten el corte. Si tu impresora necesita margen, indícalo arriba.
+                    </Text>
+                    {layoutData.error && <Text role="alert" color="red" as="p">{layoutData.error}</Text>}
                     <Flex direction="column" gap="3" mt="2">
                       <Flex align="center" gap="3">
                         <Switch checked={showCropMarks} onCheckedChange={setShowCropMarks} />
