@@ -23,6 +23,10 @@
 
 ## 🛠️ Tecnologías Utilizadas
 
+### Flechas por número
+
+En «Flecha de Orientación», selecciona «Solo números específicos». Escribe los números separados por comas en las listas Arriba, Abajo, Izquierda o Derecha (por ejemplo, `1, 5, 7`). Solo esos números tendrán flecha; los demás usarán todo el espacio para el texto. La selección utiliza el correlativo sin prefijo ni ceros de relleno y se aplica en todas las páginas y en el PDF. Un número solo puede tener una orientación. El modo «Todos los recuadros» conserva la dirección general.
+
 ### Aprovechamiento de papel
 
 La orientación automática compara una cuadrícula vertical y horizontal y elige la que permite más piezas, sin cambiar sus medidas. El margen y la separación empiezan en 0; la cuadrícula se centra en la hoja respetando el margen mínimo configurado. Puedes configurar margen y separación para tu impresora o proceso de corte.

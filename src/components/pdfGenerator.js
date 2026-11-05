@@ -6,11 +6,12 @@
 
 import { jsPDF } from 'jspdf';
 import { getCardContentLayout } from './cardContentLayout.js';
+import { resolveCardArrow } from './arrowRules.js';
 
 /**
  * Genera y descarga el archivo PDF de la imposición completa.
  */
-export function generatePdf(layoutData, arrowDirection = 'down', filename = 'lote_impresion.pdf', arrowColor = '#0090ff', showArrow = true) {
+export function generatePdf(layoutData, arrowDirection = 'down', filename = 'lote_impresion.pdf', arrowColor = '#0090ff', showArrow = true, arrowSelection = null) {
   const {
     sheetWidth,
     sheetHeight,
@@ -36,7 +37,8 @@ export function generatePdf(layoutData, arrowDirection = 'down', filename = 'lot
 
     // 1. Dibujar Tarjetas de la Página con tipografía uniforme
     page.cards.forEach(card => {
-      drawCardOnPdf(doc, card, arrowDirection, layoutData.maxLabelText, arrowColor, showArrow);
+      const arrow = resolveCardArrow(card, arrowDirection, showArrow, arrowSelection);
+      drawCardOnPdf(doc, card, arrow.direction, layoutData.maxLabelText, arrowColor, arrow.showArrow);
       
       // Dibujar borde recuadro de corte si está activado
       if (layoutData.showCardOutline) {

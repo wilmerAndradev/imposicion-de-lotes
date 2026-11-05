@@ -33,6 +33,7 @@ import {
 import { calculateLayout } from './components/layoutEngine.js';
 import { generateCardSvgContent } from './components/templateEngine.js';
 import { generatePdf } from './components/pdfGenerator.js';
+import { ARROW_DIRECTIONS, compileArrowRules, resolveCardArrow } from './components/arrowRules.js';
 
 export default function App() {
   // Estado de configuración de la secuencia y lienzo
@@ -112,6 +113,11 @@ export default function App() {
   const [showArrow, setShowArrow] = useState(true);
   const [arrowDirection, setArrowDirection] = useState('down');
   const [arrowColor, setArrowColor] = useState('#0090ff');
+  const [arrowMode, setArrowMode] = useState('all');
+  const [arrowNumberInputs, setArrowNumberInputs] = useState({ up: '', down: '', left: '', right: '' });
+  const arrowRules = useMemo(() => compileArrowRules(arrowNumberInputs), [arrowNumberInputs]);
+  const arrowSelection = { mode: arrowMode, directionsByNumber: arrowRules.directionsByNumber };
+  const arrowErrors = showArrow && arrowMode === 'selected' ? arrowRules.errors : [];
   const [paperSize, setPaperSize] = useState('letter');
   const [paperOrientation, setPaperOrientation] = useState('auto');
   const [showCropMarks, setShowCropMarks] = useState(true);
@@ -229,7 +235,7 @@ export default function App() {
 
   // Manejar exportación a PDF usando el motor original (pdfGenerator)
   const handleExportPdf = () => {
-    if (!layoutData || layoutData.error) return;
+    if (!layoutData || layoutData.error || arrowErrors.length > 0) return;
     setIsExporting(true);
 
     setTimeout(() => {
@@ -237,7 +243,7 @@ export default function App() {
         const filename = showNumbering
           ? `Lote_${prefix}${startNum}_a_${prefix}${endNum}.pdf`
           : `Lote_${prefix || 'etiquetas'}_${totalCopies}_copias.pdf`;
-        generatePdf(layoutData, arrowDirection, filename, arrowColor, showArrow);
+        generatePdf(layoutData, arrowDirection, filename, arrowColor, showArrow, arrowSelection);
       } catch (err) {
         console.error('Error al generar PDF:', err);
         alert('Ocurrió un error al generar el archivo PDF.');
@@ -362,7 +368,7 @@ export default function App() {
             <Button
               size="3"
               variant="solid"
-              disabled={isExporting || !!layoutData.error}
+              disabled={isExporting || !!layoutData.error || arrowErrors.length > 0}
               onClick={handleExportPdf}
               style={{ cursor: 'pointer', fontWeight: 'bold' }}
             >
@@ -592,7 +598,7 @@ export default function App() {
                   <div className="step-header-right">
                     {!openSteps[3] && (
                       <span className="step-badge-summary">
-                        {showArrow ? arrowLabelMap[arrowDirection] : 'Sin flechas'}
+                        {showArrow ? (arrowMode === 'selected' ? 'Por número' : arrowLabelMap[arrowDirection]) : 'Sin flechas'}
                       </span>
                     )}
                     <ChevronDownIcon className="step-chevron" width={18} height={18} />
@@ -611,7 +617,39 @@ export default function App() {
 
                     {showArrow && (
                       <>
+                        <Text as="label" htmlFor="arrow-mode" size="2" weight="bold">Aplicar flechas a</Text>
+                        <Select.Root value={arrowMode} onValueChange={setArrowMode}>
+                          <Select.Trigger id="arrow-mode" aria-label="Aplicar flechas a" style={{ width: '100%', margin: '8px 0 12px' }} />
+                          <Select.Content>
+                            <Select.Item value="all">Todos los recuadros</Select.Item>
+                            <Select.Item value="selected">Solo números específicos</Select.Item>
+                          </Select.Content>
+                        </Select.Root>
+                        {arrowMode === 'selected' && (
+                          <Flex direction="column" gap="3">
+                            <Text size="1" color="gray">
+                              Escribe los números separados por comas en la orientación que necesites.
+                              Por ejemplo: 1, 5, 7. Los demás recuadros quedarán sin flecha.
+                              Usa el número sin prefijo ni ceros de relleno.
+                            </Text>
+                            {!showNumbering && <Text role="alert" color="orange" size="2">Activa la numeración correlativa para asignar flechas por número.</Text>}
+                            {Object.entries(ARROW_DIRECTIONS).map(([direction, label]) => (
+                              <Box key={direction}>
+                                <Text as="label" htmlFor={`arrow-numbers-${direction}`} size="2">Flecha {label.toLowerCase()}</Text>
+                                <TextField.Root
+                                  id={`arrow-numbers-${direction}`}
+                                  aria-label={`Números con flecha ${label.toLowerCase()}`}
+                                  placeholder="Ej.: 1, 5, 7"
+                                  value={arrowNumberInputs[direction]}
+                                  onChange={e => setArrowNumberInputs(previous => ({ ...previous, [direction]: e.target.value }))}
+                                />
+                              </Box>
+                            ))}
+                            {arrowErrors.map(error => <Text key={error} role="alert" color="red" size="2">{error}</Text>)}
+                          </Flex>
+                        )}
                         {/* Dirección */}
+                        {arrowMode === 'all' && (
                         <Grid columns="4" gap="2">
                           <Button
                             size="2"
@@ -654,6 +692,7 @@ export default function App() {
                             <Text size="1">Derecha</Text>
                           </Button>
                         </Grid>
+                        )}
 
                         {/* Color de Flecha */}
                         <div className="color-picker-section">
@@ -835,7 +874,9 @@ export default function App() {
 
                   {/* Tarjetas de la página activa */}
                   <g id="cards-group">
-                    {currentPage && currentPage.cards.map(card => (
+                    {currentPage && currentPage.cards.map(card => {
+                      const arrow = resolveCardArrow(card, arrowDirection, showArrow, arrowSelection);
+                      return (
                       <g key={card.index} transform={`translate(${card.x}, ${card.y})`}>
                         {showCardOutline && (
                           <rect
@@ -848,10 +889,10 @@ export default function App() {
                           />
                         )}
                         <g dangerouslySetInnerHTML={{
-                          __html: generateCardSvgContent(card.labelText, card.width, card.height, arrowDirection, layoutData.maxLabelText, arrowColor, showArrow)
+                          __html: generateCardSvgContent(card.labelText, card.width, card.height, arrow.direction, layoutData.maxLabelText, arrowColor, arrow.showArrow)
                         }} />
                       </g>
-                    ))}
+                    ); })}
                   </g>
 
                   {/* Marcas de corte */}
