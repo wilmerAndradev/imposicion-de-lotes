@@ -73,7 +73,7 @@ function drawCardOnPdf(doc, card, direction, maxLabelText = card.labelText, arro
   doc.setFillColor(255, 255, 255);
   doc.rect(x, y, width, height, 'F');
 
-  const content = getCardContentLayout(width, height, direction, showArrow);
+  const content = getCardContentLayout(width, height, direction, showArrow, labelText);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(0, 0, 0);
   doc.setFontSize(content.fontSize * 72 / 25.4);

@@ -25,7 +25,7 @@ export function generateCardSvgContent(labelText, widthMm, heightMm, direction =
   const arrowPath = ARROW_PATHS[direction] || ARROW_PATHS.down;
 
   const { textX, textWidth, fontSize, baseline, arrowX, arrowY, arrowWidth, arrowHeight } =
-    getCardContentLayout(widthMm, heightMm, direction, showArrow);
+    getCardContentLayout(widthMm, heightMm, direction, showArrow, labelText);
   // Los paths originales van de 8 a 92: normalizar su área visible a la caja.
   const arrowScaleX = arrowWidth / 84;
   const arrowScaleY = arrowHeight / 84;
