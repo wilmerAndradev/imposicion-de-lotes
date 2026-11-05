@@ -5,6 +5,7 @@
  */
 
 import { jsPDF } from 'jspdf';
+import { getCardContentLayout } from './cardContentLayout.js';
 
 /**
  * Genera y descarga el archivo PDF de la imposición completa.
@@ -72,61 +73,19 @@ function drawCardOnPdf(doc, card, direction, maxLabelText = card.labelText, arro
   doc.setFillColor(255, 255, 255);
   doc.rect(x, y, width, height, 'F');
 
-  // Tamaño de fuente objetivo gigante (~82% del alto de la tarjeta)
-  const maxCharCount = maxLabelText.length;
-  let fontSizePt = height * 0.82 * 2.83465; // 1mm ≈ 2.83465 pt
-
+  const content = getCardContentLayout(width, height, direction, showArrow);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(0, 0, 0); // Pure Black #000000
-  doc.setFontSize(fontSizePt);
-
-  // Calcular anchos con la fuente seleccionada
-  let maxTextWidthMm = doc.getTextWidth(maxLabelText);
-  let currentTextWidthMm = doc.getTextWidth(labelText);
-
-  // Dimensiones de la flecha en mm
-  let arrowBoxH = showArrow ? height * 0.80 : 0;
-  let arrowBoxW = showArrow ? Math.min(width * 0.38, arrowBoxH * 0.75) : 0;
-  let gap = showArrow ? Math.max(2.5, height * 0.06) : 0;
-
-  let totalWidthForMax = maxTextWidthMm + gap + arrowBoxW;
-  const maxAllowedWidth = width * 0.94; // Utilizar hasta el 94% del ancho
-
-  // Si la etiqueta más larga sobrepasa el 94% del ancho, escalar TODO el lote uniformemente
-  if (totalWidthForMax > maxAllowedWidth) {
-    const scaleFactor = maxAllowedWidth / totalWidthForMax;
-    fontSizePt *= scaleFactor;
-    doc.setFontSize(fontSizePt);
-
-    currentTextWidthMm = doc.getTextWidth(labelText);
-    arrowBoxW *= scaleFactor;
-    arrowBoxH *= scaleFactor;
-    gap *= scaleFactor;
+  doc.setTextColor(0, 0, 0);
+  doc.setFontSize(content.fontSize * 72 / 25.4);
+  const naturalWidth = doc.getTextWidth(labelText);
+  if (naturalWidth > 0) {
+    doc.text(labelText, x + content.textX, y + content.baseline, {
+      horizontalScale: content.textWidth / naturalWidth
+    });
   }
-
-  const currentBlockWidth = currentTextWidthMm + gap + arrowBoxW;
-  const startX = Math.max(x + 0.5, x + (width - currentBlockWidth) / 2);
-  const fontSizeMm = fontSizePt / 2.83465;
-  const textY = y + (height / 2) + (fontSizeMm * 0.32);
-
   if (showArrow) {
-    if (direction === 'left') {
-      const arrowX = startX;
-      const arrowY = y + (height - arrowBoxH) / 2;
-      drawColorArrow(doc, arrowX, arrowY, arrowBoxW, arrowBoxH, 'left', arrowColor);
-
-      const textX = startX + arrowBoxW + gap;
-      doc.text(labelText, textX, textY);
-    } else {
-      const textX = startX;
-      doc.text(labelText, textX, textY);
-
-      const arrowX = startX + currentTextWidthMm + gap;
-      const arrowY = y + (height - arrowBoxH) / 2;
-      drawColorArrow(doc, arrowX, arrowY, arrowBoxW, arrowBoxH, direction, arrowColor);
-    }
-  } else {
-    doc.text(labelText, startX, textY);
+    drawColorArrow(doc, x + content.arrowX, y + content.arrowY,
+      content.arrowWidth, content.arrowHeight, direction, arrowColor);
   }
 }
 
