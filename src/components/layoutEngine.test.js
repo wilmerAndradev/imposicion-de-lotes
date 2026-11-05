@@ -8,8 +8,8 @@ test('10 × 5 cm: diez piezas exactas por hoja Carta y A4', () => {
     assert.equal(layout.cardsPerPage, 10);
     assert.equal(layout.totalPages, 3);
     assert.deepEqual(layout.pages.map(p => p.cards.length), [10, 10, 1]);
-    assert.equal(layout.pages[0].cards[0].x, 0);
-    assert.equal(layout.pages[0].cards[0].y, 0);
+    assert.equal(layout.pages[0].cards[0].x, (layout.sheetWidth - 200) / 2);
+    assert.equal(layout.pages[0].cards[0].y, (layout.sheetHeight - 250) / 2);
     assert.deepEqual(layout.pages.flatMap(p => p.cards.map(c => c.number)), Array.from({ length: 21 }, (_, i) => i + 1));
     for (const card of layout.pages.flatMap(p => p.cards)) {
       assert.equal(card.width, 100);
@@ -31,8 +31,25 @@ test('automática también elige horizontal y respeta márgenes y separación', 
   const layout = calculateLayout({ cardWidth: 50, cardHeight: 100, pageMargin: 3, gutterSize: 2 });
   assert.equal(layout.resolvedOrientation, 'landscape');
   assert.equal(layout.cardsPerPage, 10);
-  assert.equal(layout.pages[0].cards[0].x, 3);
-  assert.equal(layout.pages[0].cards[1].x, 55);
+  assert.ok(layout.pages[0].cards[0].x >= 3);
+  assert.equal(layout.pages[0].cards[1].x - layout.pages[0].cards[0].x, 52);
+});
+
+test('10 × 5 cm con margen y separación de 0,5 cm: ocho piezas centradas', () => {
+  const layout = calculateLayout({ cardWidth: 100, cardHeight: 50, pageMargin: 5, gutterSize: 5 });
+  assert.equal(layout.cardsPerPage, 8);
+  for (const page of layout.pages.filter(p => p.cards.length === 8)) {
+    const first = page.cards[0];
+    const last = page.cards.at(-1);
+    const right = layout.sheetWidth - last.x - last.width;
+    const bottom = layout.sheetHeight - last.y - last.height;
+    assert.ok(Math.abs(first.x - right) < 1e-9);
+    assert.ok(Math.abs(first.y - bottom) < 1e-9);
+    assert.ok(first.x >= 5 && first.y >= 5);
+    assert.ok(Math.abs(first.y - 32.2) < 1e-9);
+    assert.equal(page.cards[1].x - first.x - first.width, 5);
+    assert.equal(page.cards[2].y - first.y - first.height, 5);
+  }
 });
 
 test('piezas inválidas o demasiado grandes no salen del papel', () => {

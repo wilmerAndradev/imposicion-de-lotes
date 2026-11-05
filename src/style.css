@@ -696,10 +696,11 @@ body {
 /* Viewport Stage */
 .viewport-container {
   flex: 1;
+  min-height: 0;
   overflow: auto;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: flex-start;
+  justify-content: flex-start;
   padding: 40px;
   position: relative;
   background-color: #dbeafe;
@@ -778,6 +779,8 @@ body {
 
 /* Paper Stage */
 .paper-stage {
+  flex-shrink: 0;
+  margin: auto;
   box-shadow: var(--shadow-stage);
   background-color: #ffffff;
   position: relative;

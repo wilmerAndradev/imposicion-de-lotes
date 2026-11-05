@@ -57,9 +57,11 @@ export function calculateLayout(config) {
   const rows = count(sheetHeight, cardHeight);
   const cardsPerPage = cols * rows;
 
-  // 4. Alinear al margen solicitado; concentrar el sobrante al final de la hoja.
-  const startX = pageMargin;
-  const startY = pageMargin;
+  // 4. Centrar la cuadrícula sin alterar capacidad, separación ni margen mínimo.
+  const gridWidth = cols * cardWidth + Math.max(0, cols - 1) * gutterSize;
+  const gridHeight = rows * cardHeight + Math.max(0, rows - 1) * gutterSize;
+  const startX = (sheetWidth - gridWidth) / 2;
+  const startY = (sheetHeight - gridHeight) / 2;
 
   // 5. Eficiencia de uso de papel
   const usableArea = sheetWidth * sheetHeight;

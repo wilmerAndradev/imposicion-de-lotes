@@ -710,6 +710,13 @@ export default function App() {
 
                 {openSteps[4] && (
                   <div className="step-body">
+                    <Button size="2" variant="soft" mb="3" onClick={() => {
+                      setGutterSizeInput(0);
+                      setPageMarginInput(0);
+                      setPaperOrientation('auto');
+                    }}>
+                      Aprovechar al máximo la hoja
+                    </Button>
                     <Grid columns="2" gap="3" mb="3">
                       <Box style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                         <Text size="1" weight="bold" color="gray" mb="1" as="div" style={{ whiteSpace: 'nowrap', minHeight: '20px', display: 'flex', alignItems: 'center' }}>
@@ -768,8 +775,8 @@ export default function App() {
                     </Grid>
 
                     <Text size="1" color="gray" as="p">
-                      Las piezas conservan sus medidas y se alinean al margen superior izquierdo.
-                      Con margen y espaciado en 0 comparten el corte. Si tu impresora necesita margen, indícalo arriba.
+                      La cuadrícula se centra en la hoja respetando el margen mínimo y el espaciado indicados.
+                      El sobrante se reparte por igual arriba y abajo, y a ambos lados, sin cambiar las medidas de las piezas.
                     </Text>
                     {layoutData.error && <Text role="alert" color="red" as="p">{layoutData.error}</Text>}
                     <Flex direction="column" gap="3" mt="2">
@@ -813,14 +820,13 @@ export default function App() {
               <div
                 className="paper-stage"
                 style={{
-                  width: `${stageWidthPx}px`,
-                  height: `${stageHeightPx}px`,
-                  transform: `scale(${zoomScale})`
+                  width: `${stageWidthPx * zoomScale}px`,
+                  height: `${stageHeightPx * zoomScale}px`
                 }}
               >
                 <svg
-                  width={stageWidthPx}
-                  height={stageHeightPx}
+                  width="100%"
+                  height="100%"
                   viewBox={`0 0 ${layoutData.sheetWidth} ${layoutData.sheetHeight}`}
                   xmlns="http://www.w3.org/2000/svg"
                   style={{ backgroundColor: '#ffffff', display: 'block' }}
